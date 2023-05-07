@@ -60,7 +60,7 @@ def impose_cli(target: str = None) -> None:
         signature = sig(getattr(module, function))
         parameters = signature.parameters
         args_with_defaults = [(p.name, p.annotation if p.annotation.__name__ != '_empty' else None) for p in parameters.values() if p.default != Parameter.empty]
-        args_without_defaults = [(p.name, p.annotation if p.annotation.__name__ != '_empty' else None) for p in parameters.values() if p.default == Parameter.empty]
+        args_without_defaults = [(p.name, p.annotation if p.annotation.__name__ != '_empty' else None) for p in parameters.values() if p.default == Parameter.empty and p.default is not None]
         return args_without_defaults, args_with_defaults
 
     def create_dynamic_group(group_name, command_list):
@@ -79,7 +79,7 @@ def impose_cli(target: str = None) -> None:
             for opt in cmd['options']:
                 opt_name = opt[0].replace('_', '-')
                 if opt[1] is not None:
-                    dynamic_command.params.append(click.Argument((f"--{opt_name}",), type=opt[1]))
+                    dynamic_command.params.append(click.Option((f"--{opt_name}",), type=opt[1]))
                 else:
                     dynamic_command.params.append(click.Option((f"--{opt_name}",)))
 
