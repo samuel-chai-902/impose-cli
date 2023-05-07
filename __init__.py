@@ -1,1 +1,1 @@
-from .impose_cli import impose_cli
+from impose_cli import impose, impose_cli
