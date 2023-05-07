@@ -4,7 +4,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 from inspect import getframeinfo, currentframe
 from inspect import Parameter, signature as sig
 from os import listdir
-from os.path import exists, isdir, join, expanduser, dirname, abspath
+from os.path import exists, join, dirname, abspath
 
 
 def impose(func):
