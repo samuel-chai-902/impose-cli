@@ -8,6 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TWINE_USERNAME: __token__
+      TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      BRANCH_TAG: ${{ github.ref }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -35,12 +39,10 @@ jobs:
           source env/bin/activate
           python setup.py sdist bdist_wheel
 
+      - name: Output version
+        run: |
+          echo "BRANCH_TAG is $BRANCH_TAG"
+
       - name: Upload to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          BRANCH_TAG: ${{ github.ref }}
-          steps:
-            - name: Print environment variable
-              run: |
-                echo "BRANCH_TAG is $BRANCH_TAG"
+        run: |
+          twine upload dist/*
