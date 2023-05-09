@@ -11,7 +11,7 @@ DESCRIPTION = 'Create a CLI tool easily.'
 # Setting up
 setup(
     name="impose-cli",
-    version=environ['BRANCH_TAG'],
+    version=environ['RELEASE_VERSION'],
     author="scdev",
     author_email="samuel.chai.development@gmail.com",
     description=DESCRIPTION,

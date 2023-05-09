@@ -13,10 +13,10 @@ jobs:
       TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: 3.8
 
@@ -33,18 +33,25 @@ jobs:
           source env/bin/activate
           pytest tests/test.py
 
-      - name: Get version tag
-        env:
-          BRANCH_TAG: ${{ steps.version.outputs.tag }}
-
-      - name: Determine version
-        run: |
-          echo "::set-output name=tag::$(git describe --tags --always --dirty)"
-
       - name: Build distribution
         run: |
           source env/bin/activate
           python setup.py sdist bdist_wheel
+
+      - name: Set output
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+      - name: Check output
+        env:
+          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          echo $RELEASE_VERSION
+          echo ${{ steps.vars.outputs.tag }}
+
+      - name: Output version
+        run: |
+          echo "BRANCH_TAG is $BRANCH_TAG"
 
       - name: Upload to PyPI
         run: |
