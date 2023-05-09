@@ -33,11 +33,6 @@ jobs:
           source env/bin/activate
           pytest tests/test.py
 
-      - name: Build distribution
-        run: |
-          source env/bin/activate
-          python setup.py sdist bdist_wheel
-
       - name: Set output
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
@@ -49,9 +44,10 @@ jobs:
           echo $RELEASE_VERSION
           echo ${{ steps.vars.outputs.tag }}
 
-      - name: Output version
+      - name: Build distribution
         run: |
-          echo "BRANCH_TAG is $BRANCH_TAG"
+          source env/bin/activate
+          python setup.py sdist bdist_wheel
 
       - name: Upload to PyPI
         run: |
