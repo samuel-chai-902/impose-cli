@@ -30,19 +30,14 @@ jobs:
           source env/bin/activate
           pytest tests/test.py
 
-      - name: Install wheel
+      - name: Build distribution
         run: |
           source env/bin/activate
           pip install wheel
-
-      - name: Install setuptools
-        run: |
-          source env/bin/activate
           pip install setuptools
-
-      - name: Build distribution
-        run: |
+          source env/bin/activate
           python setup.py sdist bdist_wheel
+
       - name: Upload to PyPI
         env:
           TWINE_USERNAME: __token__
