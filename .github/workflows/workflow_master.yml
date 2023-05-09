@@ -38,7 +38,6 @@ jobs:
           BRANCH_TAG: ${{ steps.version.outputs.tag }}
 
       - name: Determine version
-        id: version
         run: |
           echo "::set-output name=tag::$(git describe --tags --always --dirty)"
 
