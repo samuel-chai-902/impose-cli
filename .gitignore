@@ -1,3 +1,4 @@
 impose-cli.iml
 venv/
 .idea/
+.env

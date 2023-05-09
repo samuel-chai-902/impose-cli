@@ -11,7 +11,11 @@ def impose(func):
     return func
 
 
-def impose_cli(target: str = None) -> None:
+def expose(func: click.Group):
+    func()
+
+
+def impose_cli(target: [str, None] = None) -> None:
     """
     If target is a directory, then each file will be a group and all functions will be a command
     If medium is a file, then there will be no group and all functions will be a command
@@ -58,8 +62,8 @@ def impose_cli(target: str = None) -> None:
     def analyze_functions(module, function):
         signature = sig(getattr(module, function))
         parameters = signature.parameters
-        args_with_defaults = [(p.name, p.annotation if p.annotation.__name__ != '_empty' else None) for p in parameters.values() if p.default != Parameter.empty]
-        args_without_defaults = [(p.name, p.annotation if p.annotation.__name__ != '_empty' else None) for p in parameters.values() if p.default == Parameter.empty and p.default is not None]
+        args_with_defaults = [[p.name, p.default, p.annotation if p.annotation.__name__ != '_empty' else None] for p in parameters.values() if p.default != Parameter.empty]
+        args_without_defaults = [[p.name, p.annotation if p.annotation.__name__ != '_empty' else None] for p in parameters.values() if p.default == Parameter.empty and p.default is not None]
         return args_without_defaults, args_with_defaults
 
     def create_dynamic_group(group_name, command_list):
@@ -77,10 +81,10 @@ def impose_cli(target: str = None) -> None:
 
             for opt in cmd['options']:
                 opt_name = opt[0].replace('_', '-')
-                if opt[1] is not None:
-                    dynamic_command.params.append(click.Option((f"--{opt_name}",), type=opt[1]))
+                if opt[2] is not None:
+                    dynamic_command.params.append(click.Option((f"--{opt_name}",), default=opt[1], type=opt[2]))
                 else:
-                    dynamic_command.params.append(click.Option((f"--{opt_name}",)))
+                    dynamic_command.params.append(click.Option((f"--{opt_name}",), default=opt[2]))
 
             dynamic_group.add_command(dynamic_command)
 
@@ -103,12 +107,11 @@ def impose_cli(target: str = None) -> None:
                 "callback": getattr(module, function)
             })
 
-    main_group = create_dynamic_group('cli', [])
     if target is not None:
+        main_group = create_dynamic_group('cli', [])
         keys = meta.keys()
         for key in keys:
             main_group.add_command(create_dynamic_group(key, meta[key]))
+        return main_group
     else:
-        main_group = create_dynamic_group('cli', meta[list(meta.keys())[0]])
-
-    main_group()
+        return create_dynamic_group('cli', meta[list(meta.keys())[0]])
