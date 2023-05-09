@@ -11,13 +11,12 @@ jobs:
     env:
       TWINE_USERNAME: __token__
       TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      BRANCH_TAG: $(git describe --tags | cut -c 2- | tr -d '\n')
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v2
         with:
           python-version: 3.8
 
@@ -34,14 +33,19 @@ jobs:
           source env/bin/activate
           pytest tests/test.py
 
+      - name: Get version tag
+        env:
+          BRANCH_TAG: ${{ steps.version.outputs.tag }}
+
+      - name: Determine version
+        id: version
+        run: |
+          echo "::set-output name=tag::$(git describe --tags --always --dirty)"
+
       - name: Build distribution
         run: |
           source env/bin/activate
           python setup.py sdist bdist_wheel
-
-      - name: Output version
-        run: |
-          echo "BRANCH_TAG is $BRANCH_TAG"
 
       - name: Upload to PyPI
         run: |
