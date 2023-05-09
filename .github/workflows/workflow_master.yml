@@ -39,7 +39,8 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          BRANCH_TAG: $(echo ${{ github.ref }} | sed 's/refs\/tags\///')
-        run: |
-          source env/bin/activate
-          twine upload dist/*
+          BRANCH_TAG: ${{ github.ref }}
+          steps:
+            - name: Print environment variable
+              run: |
+                echo "BRANCH_TAG is $BRANCH_TAG"
