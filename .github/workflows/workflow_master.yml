@@ -11,7 +11,7 @@ jobs:
     env:
       TWINE_USERNAME: __token__
       TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      BRANCH_TAG: ${{ github.ref }}
+      BRANCH_TAG: $(git describe --tags | cut -c 2- | tr -d '\n')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
