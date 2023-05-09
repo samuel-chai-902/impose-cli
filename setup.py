@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 def get_version():
     try:
         version = run('git describe tags', capture_output=True, shell=True)
+        version = ''.join(filter(str.isdigit, version))
     except Exception as e:
         print(str(e))
         version = '0.0.1'
