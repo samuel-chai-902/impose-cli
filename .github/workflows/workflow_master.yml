@@ -45,4 +45,5 @@ jobs:
 
       - name: Upload to PyPI
         run: |
+          source env/bin/activate
           twine upload dist/*
