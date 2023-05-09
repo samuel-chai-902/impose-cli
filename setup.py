@@ -1,5 +1,3 @@
-from subprocess import run
-from os import environ
 from setuptools import setup, find_packages
 
 
@@ -11,7 +9,7 @@ DESCRIPTION = 'Create a CLI tool easily.'
 # Setting up
 setup(
     name="impose-cli",
-    version=environ['RELEASE_VERSION'],
+    version='0.0.4',
     author="scdev",
     author_email="samuel.chai.development@gmail.com",
     description=DESCRIPTION,
