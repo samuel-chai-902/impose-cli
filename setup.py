@@ -1,12 +1,14 @@
-import subprocess
+from subprocess import run
 from setuptools import setup, find_packages
 
 
 def get_version():
     try:
-        version = subprocess.check_output(['git', 'describe', '--tags']).decode().strip()
-    except subprocess.CalledProcessError:
+        version = run('git describe tags', capture_output=True, shell=True)
+    except Exception as e:
+        print(str(e))
         version = '0.0.1'
+    print(version)
     return version
 
 
