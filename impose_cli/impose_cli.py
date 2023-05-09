@@ -49,7 +49,6 @@ def impose_cli(target: str = None) -> None:
             dirs = [x for x in listdir(directory) if x.endswith('.py')]
             return [abspath(join(directory, f)) for f in dirs]
 
-
     def load_module_from_file(file_path, module_name):
         spec = spec_from_file_location(module_name, file_path)
         module = module_from_spec(spec)
@@ -112,4 +111,4 @@ def impose_cli(target: str = None) -> None:
     else:
         main_group = create_dynamic_group('cli', meta[list(meta.keys())[0]])
 
-    return main_group
+    main_group()

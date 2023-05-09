@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.14'
+VERSION = '0.0.15'
 DESCRIPTION = 'Create a CLI tool easily.'
 
 # Setting up
 setup(
-    name="impose_cli",
+    name="impose-cli",
     version=VERSION,
     author="scdev",
     author_email="samuel.chai.development@gmail.com",
