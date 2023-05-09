@@ -18,7 +18,7 @@ def function_with_arguments_with_defaults(arg1: str = 'yes'):
 
 
 def testing_correct_argument_parsing():
-    commands = impose_cli().commands
+    commands = impose_cli(execute=False).commands
     assert len(commands['function-without-arguments'].params) == 0
     assert len(commands['function-with-arguments'].params) == 2
     assert commands['function-with-arguments'].params[0].opts == ['arg1']

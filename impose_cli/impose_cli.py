@@ -15,7 +15,7 @@ def expose(func: click.Group):
     func()
 
 
-def impose_cli(target: [str, None] = None) -> None:
+def impose_cli(execute: bool = True, target: [str, None] = None) -> None:
     """
     If target is a directory, then each file will be a group and all functions will be a command
     If medium is a file, then there will be no group and all functions will be a command
@@ -62,8 +62,10 @@ def impose_cli(target: [str, None] = None) -> None:
     def analyze_functions(module, function):
         signature = sig(getattr(module, function))
         parameters = signature.parameters
-        args_with_defaults = [[p.name, p.default, p.annotation if p.annotation.__name__ != '_empty' else None] for p in parameters.values() if p.default != Parameter.empty]
-        args_without_defaults = [[p.name, p.annotation if p.annotation.__name__ != '_empty' else None] for p in parameters.values() if p.default == Parameter.empty and p.default is not None]
+        args_with_defaults = [[p.name, p.default, p.annotation if p.annotation.__name__ != '_empty' else None] for p in
+                              parameters.values() if p.default != Parameter.empty]
+        args_without_defaults = [[p.name, p.annotation if p.annotation.__name__ != '_empty' else None] for p in
+                                 parameters.values() if p.default == Parameter.empty and p.default is not None]
         return args_without_defaults, args_with_defaults
 
     def create_dynamic_group(group_name, command_list):
@@ -112,6 +114,10 @@ def impose_cli(target: [str, None] = None) -> None:
         keys = meta.keys()
         for key in keys:
             main_group.add_command(create_dynamic_group(key, meta[key]))
-        return main_group
     else:
-        return create_dynamic_group('cli', meta[list(meta.keys())[0]])
+        main_group = create_dynamic_group('cli', meta[list(meta.keys())[0]])
+
+    if execute:
+        main_group()
+    else:
+        return main_group
