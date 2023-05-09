@@ -1,16 +1,10 @@
-from subprocess import run
+from subprocess import run, CalledProcessError
 from setuptools import setup, find_packages
 
 
 def get_version():
-    try:
-        version = run('git describe tags', capture_output=True, shell=True)
-        version = ''.join(filter(str.isdigit, version))
-    except Exception as e:
-        print(str(e))
-        version = '0.0.1'
-    print(version)
-    return version
+    output = run('git describe --tags', capture_output=True, shell=True).stdout.decode('utf-8')
+    return ''.join(filter(lambda x: x.isdigit() or x == '.', list(output)))
 
 
 with open('requirements.txt') as f:
