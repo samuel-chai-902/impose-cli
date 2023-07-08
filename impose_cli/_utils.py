@@ -1,21 +1,18 @@
-import inspect
+from .decorators import *  # Do not remove this import
 import os
+import inspect
 import builtins
 import click
-from typing import Any
 from docstring_parser import parse as docparse
-from .decorators import *
 from inspect import signature as sig
 from ast import parse, FunctionDef, Import, ImportFrom, unparse
 from importlib.util import spec_from_file_location, module_from_spec
 from os.path import dirname, join, exists, abspath, splitext, basename, relpath
 
-
 _SUPPORTED_TYPES = [str, int, list, dict]
 
 
 def parse_nodes(entry: str, target: str):
-
     class Function(object):
         def __init__(self, name, function_info: dict):
             self.name = name
@@ -63,7 +60,9 @@ def parse_nodes(entry: str, target: str):
 
     def build_tree(node_info: dict):
         rel_path_start = entry if target is None else join(dirname(entry), target)
-        relative_dict = {"/{}".format(relpath(x, rel_path_start).replace(".py", "").replace("_", "-").replace(".", "")): y for x, y in node_info.items()}
+        relative_dict = {
+            "/{}".format(relpath(x, rel_path_start).replace(".py", "").replace("_", "-").replace(".", "")): y for x, y
+            in node_info.items()}
         tree = Tree(Node(None))
         list_of_tuples = []
         for file, func_info in relative_dict.items():
@@ -172,9 +171,11 @@ def parse_nodes(entry: str, target: str):
             analysis = analyze_file(file, module)
             if "_settings" in analysis and "impose" in analysis["_settings"]["decorators"]:
                 for function_name in analysis.keys():
-                    if "impose" not in analysis[function_name]["decorators"] and "hide" not in analysis[function_name]["decorators"]:
+                    if "impose" not in analysis[function_name]["decorators"] and "hide" not in analysis[function_name][
+                        "decorators"]:
                         analysis[function_name]["decorators"].append("impose")
-            file_function_map[file] = {x: y for x, y in analysis.items() if "impose" in y["decorators"] and x != "_settings"}
+            file_function_map[file] = {x: y for x, y in analysis.items() if
+                                       "impose" in y["decorators"] and x != "_settings"}
         return file_function_map
 
     def find_files():
@@ -186,7 +187,8 @@ def parse_nodes(entry: str, target: str):
         if not exists(directory):
             raise FileNotFoundError(f"There is no directory {directory}.")
 
-        dirs = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files if file.endswith('.py')]
+        dirs = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files if
+                file.endswith('.py')]
         return [abspath(join(directory, f)) for f in dirs]
 
     files = find_files()
@@ -261,13 +263,14 @@ def build_api_with_tree(tree, root_name=None, return_before_executing=False, hos
     api = fastapi.FastAPI()
 
     def create_endpoint(router, function):
-        @router.get(function.name)
+        @router.get(("/{}".format(function.name) if not function.name.startswith("/") else function.name))
         def dynamic_route():
             return function.reference
+
         return router
 
     def handle_child(child, parent_group):
-        child_group = fastapi.APIRouter(prefix=child.name)
+        child_group = fastapi.APIRouter(prefix="/{}".format(child.name).replace("//", "/"))
         parent_group.add_command(child_group)
         child.external_object = child_group
         for function in child.functions:
@@ -283,6 +286,7 @@ def build_api_with_tree(tree, root_name=None, return_before_executing=False, hos
         root.alter_children(handle_child)
         api.include_router(base_route)
         return api
+
     res = dft(tree.root)
     if return_before_executing:
         return res

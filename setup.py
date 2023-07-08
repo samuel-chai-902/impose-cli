@@ -9,13 +9,13 @@ DESCRIPTION = 'Create a CLI tool easily.'
 # Setting up
 setup(
     name="impose-cli",
-    version='0.1.41rc1',
+    version='0.1.41rc6',
     author="scdev",
     author_email="samuel.chai.development@gmail.com",
     description=DESCRIPTION,
     packages=find_packages(),
     install_requires=requirements,
-    extra_requires={
+    extras_require={
         "api": ["fastapi", "uvicorn"]
     },
     keywords=['python', 'cli', 'click'],

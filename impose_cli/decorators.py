@@ -9,3 +9,7 @@ def require_flags(func):
 
 def hide(func):
     return func
+
+
+def cleanup(func):
+    return func
