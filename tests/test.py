@@ -1,5 +1,7 @@
 import pytest
-from impose_cli.impose_cli import impose, impose_cli
+from impose_cli.impose_cli import impose_cli
+from impose_cli.decorators import impose
+
 
 
 @impose
@@ -18,7 +20,7 @@ def function_with_arguments_with_defaults(arg1: str = 'yes'):
 
 
 def testing_correct_argument_parsing():
-    commands = impose_cli(execute=False).commands
+    commands = impose_cli(return_before_executing=True).commands
     assert len(commands['function-without-arguments'].params) == 0
     assert len(commands['function-with-arguments'].params) == 2
     assert commands['function-with-arguments'].params[0].opts == ['arg1']
@@ -33,3 +35,8 @@ def testing_impose_decorator():
     assert function_without_arguments() == True
     assert function_with_arguments(None, None) == True
     assert function_with_arguments_with_defaults('str') == 'str'
+
+
+def testing_inner_directory():
+    commands = impose_cli(return_before_executing=True, target="complex").commands
+    assert 1 == 1
