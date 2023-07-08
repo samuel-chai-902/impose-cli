@@ -54,7 +54,8 @@ def impose_cli(target: [str, None] = None, return_before_executing: bool = False
             dirs = [x for x in listdir(directory) if x.endswith('.py')]
             return [abspath(join(directory, f)) for f in dirs]
     #
-    def load_module_from_file( file_path, module_name):
+
+    def load_module_from_file(file_path, module_name):
         spec = spec_from_file_location(module_name, file_path)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -72,7 +73,7 @@ def impose_cli(target: [str, None] = None, return_before_executing: bool = False
     # def create_dynamic_group(group_name, command_list):
     #     dynamic_group = click.Group(name=group_name)
     #
-    #     for cmd in command_list:
+    #     for cdmd in command_list:
     #         dynamic_command = click.Command(name=cmd['name'].replace('_', '-'), callback=cmd['callback'])
     #
     #         for arg in cmd['arguments']:

@@ -1,1 +1,2 @@
 click
+docstring-parser
