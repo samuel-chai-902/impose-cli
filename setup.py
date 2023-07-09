@@ -9,7 +9,7 @@ DESCRIPTION = 'Create a CLI tool easily.'
 # Setting up
 setup(
     name="impose-cli",
-    version='0.2.1',
+    version='0.3.1',
     author="scdev",
     author_email="samuel.chai.development@gmail.com",
     description=DESCRIPTION,
