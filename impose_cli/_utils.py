@@ -39,7 +39,7 @@ def parse_nodes(entry: str, target: str):
 
         def alter_children(self, callback):
             for child in self.children:
-                callback(child, self.external_object)
+                callback(child, self)
 
     class Tree(object):
         def __init__(self, root: Node):
@@ -184,7 +184,7 @@ def parse_nodes(entry: str, target: str):
     files = find_files()
     meta = produce_module_map(files)
     tree = build_tree(meta)
-    if len(tree.root.children) == 1 and not len(tree.root.functions) and tree.root.children[0].name == "":
+    if len(tree.root.children) == 1 and not len(tree.root.functions) and (tree.root.name == "" or tree.root.name is None):
         tree.root = tree.root.children[0]
         tree.root.root = True
     return tree
@@ -239,7 +239,7 @@ class CLIInterfaceBuilder(InterfaceBuilder):
                 config["type"] = getattr(builtins, meta["type"])
             if "default" not in meta and "require_flags" in function.decorators:
                 config["required"] = True
-            if "description" in meta:
+            if "description" in meta and "default" in meta or "require_flags" in function.decorators:
                 config["help"] = meta["description"]
             command.params.append(
                 click.Option((f"--{arg}",), **config) if "default" in meta or "require_flags" in function.decorators else click.Argument((arg,), **config)
