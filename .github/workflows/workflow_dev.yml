@@ -3,7 +3,7 @@ name: Publish to PyPI
 on:
   push:
     branches:
-      - master
+      - dev
 
 jobs:
   build:
@@ -29,10 +29,10 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-api.txt
 
-#      - name: Run pytest
-#        run: |
-#          source env/bin/activate
-#          pytest tests/test.py
+      #      - name: Run pytest
+      #        run: |
+      #          source env/bin/activate
+      #          pytest tests/test.py
 
       - name: Build distribution
         run: |
