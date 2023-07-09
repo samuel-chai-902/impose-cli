@@ -1,11 +1,12 @@
 import os
 import inspect
 import builtins
+import astor
 import click
 from .errors import InterfaceNotImplementedError
 from docstring_parser import parse as docparse
 from inspect import signature as sig
-from ast import parse, FunctionDef, Import, ImportFrom, unparse
+from ast import parse, FunctionDef, Import, ImportFrom
 from importlib.util import spec_from_file_location, module_from_spec
 from os.path import dirname, join, exists, abspath, splitext, basename, relpath
 from . import decorators as imposedecorators
@@ -85,7 +86,7 @@ def parse_nodes(entry: str, target: str):
             for arg in arg_list:
                 parameter_meta[arg.arg] = {}
                 if hasattr(arg, "annotation") and getattr(arg, "annotation") is not None:
-                    parameter_meta[arg.arg]["type"] = unparse(getattr(arg, "annotation"))
+                    parameter_meta[arg.arg]["type"] = astor.to_source(getattr(arg, "annotation")).strip()
                 else:
                     parameter_meta[arg.arg]["type"] = "Any"
                 parameter_settings = sig(getattr(module, node.name)).parameters.get(arg.arg)

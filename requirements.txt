@@ -1,2 +1,3 @@
 click
 docstring-parser
+astor
