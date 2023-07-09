@@ -3,7 +3,7 @@ from inspect import currentframe, getframeinfo
 
 
 def impose_cli(target: str = None, launch_type: str = "cli", launch_specific_configs: dict = {},
-               return_before_executing: bool = False, build_cache: bool = True):
+               return_before_executing: bool = False, root_name: str = "cli", build_cache: bool = True):
     """
     The entrypoint for building a suite of CLI commands / API endpoints.
     :param launch_specific_configs:
@@ -15,5 +15,5 @@ def impose_cli(target: str = None, launch_type: str = "cli", launch_specific_con
     """
 
     tree = parse_nodes(getframeinfo(currentframe().f_back)[0], target)
-    return _get_interface_builder(tree, launch_type, launch_specific_configs, return_before_executing)
+    return _get_interface_builder(tree, launch_type, root_name, launch_specific_configs, return_before_executing)
 

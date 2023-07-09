@@ -13,15 +13,3 @@ def hide(func):
 
 def cleanup(func):
     return func
-
-
-def post(func):
-    return func
-
-
-def put(func):
-    return func
-
-
-def delete(func):
-    return func
