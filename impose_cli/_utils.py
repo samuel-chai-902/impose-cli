@@ -3,13 +3,14 @@ import os
 import inspect
 import builtins
 import click
+from .errors import InterfaceNotImplementedError
 from docstring_parser import parse as docparse
 from inspect import signature as sig
+from typing import Optional, Any
+from functools import wraps
 from ast import parse, FunctionDef, Import, ImportFrom, unparse
 from importlib.util import spec_from_file_location, module_from_spec
 from os.path import dirname, join, exists, abspath, splitext, basename, relpath
-
-_SUPPORTED_TYPES = [str, int, list, dict]
 
 
 def parse_nodes(entry: str, target: str):
@@ -17,14 +18,13 @@ def parse_nodes(entry: str, target: str):
         def __init__(self, name, function_info: dict):
             self.name = name
             self.arguments = function_info["arguments"]
-            self.options = function_info["options"]
             self.decorators = function_info["decorators"]
             self.long_description = function_info["long_description"]
             self.short_description = function_info["short_description"]
             self.reference = function_info["reference"]
 
     class Node(object):
-        def __init__(self, name: str):
+        def __init__(self, name: str = None):
             self.root = False
             self.name = name
             if self.name is None:
@@ -63,7 +63,7 @@ def parse_nodes(entry: str, target: str):
         relative_dict = {
             "/{}".format(relpath(x, rel_path_start).replace(".py", "").replace("_", "-").replace(".", "")): y for x, y
             in node_info.items()}
-        tree = Tree(Node(None))
+        parse_tree = Tree(Node())
         list_of_tuples = []
         for file, func_info in relative_dict.items():
             for func in func_info:
@@ -72,8 +72,8 @@ def parse_nodes(entry: str, target: str):
                     "function_info": relative_dict[file][func]
                 }))
         for x, y in list_of_tuples:
-            tree.add_func(x, y)
-        return tree
+            parse_tree.add_func(x, y)
+        return parse_tree
 
     def extract_meta(node: FunctionDef, doc, module):
         parameter_meta = {}
@@ -91,7 +91,8 @@ def parse_nodes(entry: str, target: str):
                 else:
                     parameter_meta[arg.arg]["type"] = "Any"
                 parameter_settings = sig(getattr(module, node.name)).parameters.get(arg.arg)
-                if hasattr(parameter_settings, "default"):
+                if hasattr(parameter_settings, "default") and \
+                        str(getattr(parameter_settings, "default")) != "<class 'inspect._empty'>":
                     parameter_meta[arg.arg]["default"] = parameter_settings.default
                 if arg.arg in doc_meta:
                     parameter_meta[arg.arg]["description"] = doc_meta[arg.arg]
@@ -112,7 +113,7 @@ def parse_nodes(entry: str, target: str):
         return decorator_list
 
     def analyze_file(python_file: str, module):
-        tree = parse(open(python_file, "r").read())
+        ast_tree = parse(open(python_file, "r").read())
 
         imports = {
             "direct": [],
@@ -120,7 +121,7 @@ def parse_nodes(entry: str, target: str):
         }
 
         data = {}
-        for node in tree.body:
+        for node in ast_tree.body:
             if isinstance(node, ImportFrom):
                 for name in node.names:
                     imports["from"].append(name.name if name.asname is None else name.asname)
@@ -137,17 +138,9 @@ def parse_nodes(entry: str, target: str):
                     short_description = doc.short_description
                     long_description = doc.long_description
                 decorator_list = check_if_my_decorators(imports, node)
-                meta = extract_meta(node, doc, module)
-                options = {}
-                arguments = {}
-                for parameter_name in meta.keys():
-                    if "default" in meta[parameter_name]:
-                        options[parameter_name] = meta[parameter_name]
-                    else:
-                        arguments[parameter_name] = meta[parameter_name]
+                function_meta = extract_meta(node, doc, module)
                 data[node.name] = {
-                    "arguments": arguments,
-                    "options": options,
+                    "arguments": function_meta,
                     "long_description": long_description,
                     "short_description": short_description,
                     "decorators": decorator_list,
@@ -171,8 +164,8 @@ def parse_nodes(entry: str, target: str):
             analysis = analyze_file(file, module)
             if "_settings" in analysis and "impose" in analysis["_settings"]["decorators"]:
                 for function_name in analysis.keys():
-                    if "impose" not in analysis[function_name]["decorators"] and "hide" not in analysis[function_name][
-                        "decorators"]:
+                    if "impose" not in analysis[function_name]["decorators"] and \
+                            "hide" not in analysis[function_name]["decorators"]:
                         analysis[function_name]["decorators"].append("impose")
             file_function_map[file] = {x: y for x, y in analysis.items() if
                                        "impose" in y["decorators"] and x != "_settings"}
@@ -200,95 +193,167 @@ def parse_nodes(entry: str, target: str):
     return tree
 
 
-def build_cli_with_tree(tree, root_name=None, return_before_executing=False):
-    def get_types(type_name):
-        # Import custom logic here
-        return hasattr(builtins, type_name) and isinstance(getattr(builtins, type_name), type).__name__
+class InterfaceBuilder(object):
+    def __init__(self, tree, config: dict = None):
+        self.tree = tree
+        self.config = config
 
-    def create_command(function):
+    def dfs(self):
+        self.initialize_root()
+        root = self.tree.root
+        for function in root.functions:
+            self.handle_vertex(root, function)
+        root.alter_children(type(self).handle_edge)
+
+    def initialize_root(self):
+        pass
+
+    @staticmethod
+    def handle_edge(node, parent):
+        pass
+
+    @staticmethod
+    def handle_vertex(node, function):
+        pass
+
+    def run(self):
+        self.tree.root.external_object()
+
+
+class CLIInterfaceBuilder(InterfaceBuilder):
+    def initialize_root(self):
+        self.tree.root.external_object = click.Group(name=self.tree.root)
+
+    @staticmethod
+    def handle_vertex(node, function):
         command = click.Command(
             name=function.name.replace("_", "-"),
             callback=function.reference,
             short_help=function.short_description,
             help=function.long_description
         )
-
-        for arg, config in function.arguments.items():
-            click_configurations = {}
-            if "default" in config:
-                click_configurations["default"] = config["default"]
-            if "type" in config and config["type"] != "Any":
-                click_configurations["type"] = config["type"]
-            if "default" not in config and "require_flags" in function.decorators:
+        function.arguments.update(function.options)
+        for arg, meta in function.arguments.items():
+            config = {}
+            if "default" in meta:
+                config["default"] = meta["default"]
+            if "type" in meta and meta["type"] != "Any":
+                config["type"] = meta["type"]
+            if "default" not in meta and "require_flags" in function.decorators:
                 config["required"] = True
-            if "description" in config:
-                config["help"] = config["description"]
-            if "default" in config:
-                command.params.append(click.Option((arg,), **click_configurations))
-            else:
-                if "required_flags" in function.decorators:
-                    command.params.append(click.Option((arg,), **click_configurations))
+            if "description" in meta:
+                config["help"] = meta["description"]
+            command.params.append(
+                click.Option((arg,), **config) if "default" in meta or "require_flags" in function.decorators else click.Argument((arg,), **config)
+            )
+        node.external_object.add_command(command)
+
+    @staticmethod
+    def handle_edge(node, parent):
+        node.external_object = click.Group(name=node.name)
+        parent.external_object.add_command(node.external_object)
+        for function in node.functions:
+            CLIInterfaceBuilder.handle_vertex(node, function)
+        if node is not None and node.children is not None and len(node.children) > 0:
+            node.alter_children(CLIInterfaceBuilder.handle_edge)
+
+    def run(self):
+        self.tree.root.external_object()
+
+
+class APIInterfaceBuilder(InterfaceBuilder):
+    def initialize_root(self):
+        import fastapi
+        import uvicorn
+        import pydantic
+        self.tree.root.external_object = fastapi.FastAPI(prefix="/{}".format(self.tree.root.name).replace("//", "/"))
+
+    @staticmethod
+    def handle_edge(node, parent):
+        import fastapi
+        node.external_object = fastapi.APIRouter(prefix="/{}".format(node.name).replace("//", "/"))
+        parent.external_object.include_router(node.external_object)
+        for function in node.functions:
+            APIInterfaceBuilder.handle_vertex(node, function)
+        if node is not None and node.chidlren is not None and len(node.children) > 0:
+            node.alter_children(APIInterfaceBuilder.handle_edge)
+
+    @staticmethod
+    def handle_vertex(node, function):
+        from pydantic import create_model, BaseModel
+        methods = ["post", "get", "put", "delete"]
+        found_method = next((method for method in function.decorators if method in methods), None)
+        if not found_method:
+            found_method = "get"
+
+        if found_method in ["post", "put"]:
+            def adjust_function(original_function, pydantic_type):
+                def request(body: pydantic_type):
+                    arguments = body.body
+                    return original_function(**arguments)
+                return request
+            names = []
+            types = []
+            for name in function.arguments.keys():
+                names.append(name)
+                if "type" in function.arguments[name]:
+                    types.append(getattr(builtins, function.arguments[name]["type"]))
                 else:
-                    command.params.append(click.Argument((arg,), **click_configurations))
+                    types.append(Any)
+                if "default" in function.arguments[name]:
+                    types[-1] = types[-1]
+            details = dict(zip(names, types))
+            PyDynamicModel = type("DynamicalModel", (BaseModel,), details)
+            PyDynamicModel.__annotations__["optional"] = True
+            getattr(node.external_object, found_method)(adjust_function(function.reference, PyDynamicModel))
+        else:
+            getattr(node.external_object, found_method)(function.reference)
 
-        return command
-
-    def handle_child(child, parent_group):
-        child_group = click.Group(name=child.name)
-        parent_group.add_command(child_group)
-        child.external_object = child_group
-        for function in child.functions:
-            child_group.add_command(create_command(function))
-        if child is not None and child.children is not None and len(child.children) > 0:
-            child.alter_children(handle_child)
-
-    def dft(root):
-        cli = click.Group(name="root")
-        root.external_object = cli
-        for function in root.functions:
-            cli.add_command(create_command(function))
-        root.alter_children(handle_child)
-        return cli
-
-    res = dft(tree.root)
-    if not return_before_executing:
-        return res
-    else:
-        res()
+    def run(self):
+        import uvicorn
+        uvicorn.run(self.tree.root.external_object, host="0.0.0.0", port=8000)
 
 
-def build_api_with_tree(tree, root_name=None, return_before_executing=False, host="0.0.0.0", port=8000):
-    import fastapi
-    import uvicorn
-    api = fastapi.FastAPI()
+def _get_interface_builder(tree, interface_type, config, return_before_executing):
+    builder_name = "{}InterfaceBuilder".format(interface_type.upper())
+    if builder_name in globals():
+        builder = globals()[builder_name](tree, config)
+        builder.dfs()
+        if return_before_executing:
+            return builder.tree.root.external_object
+        else:
+            builder.run()
 
-    def create_endpoint(router, function):
-        @router.get(("/{}".format(function.name) if not function.name.startswith("/") else function.name))
-        def dynamic_route():
-            return function.reference
 
-        return router
-
-    def handle_child(child, parent_group):
-        child_group = fastapi.APIRouter(prefix="/{}".format(child.name).replace("//", "/"))
-        parent_group.add_command(child_group)
-        child.external_object = child_group
-        for function in child.functions:
-            pass
-        if child is not None and child.children is not None and len(child.children) > 0:
-            child.alter_children(handle_child)
-
-    def dft(root):
-        base_route = fastapi.APIRouter()
-        root.external_object = base_route
-        for function in root.functions:
-            create_endpoint(base_route, function)
-        root.alter_children(handle_child)
-        api.include_router(base_route)
-        return api
-
-    res = dft(tree.root)
-    if return_before_executing:
-        return res
-    else:
-        uvicorn.run(res, host=host, port=port)
+#
+#
+# class SpecificInterfaceBuilder(object):
+#     def __init__(self, tree, interface_type: str, config: dict = None):
+#         self.tree = tree
+#         self.interface_type = interface_type
+#         self.config = config
+#
+#         initiate_root_function = f"initiate_{interface_type}_root"
+#         vertex_handler = f"handle_{interface_type}_vertices"
+#         edge_handler = f"handle_{interface_type}_edges"
+#         run_function = f"run_{interface_type}"
+#         if not hasattr(self, initiate_root_function) or not hasattr(self, vertex_handler) or not hasattr(self, edge_handler):
+#             raise InterfaceNotImplementedError(interface_type)
+#         self.initiate_root_function = getattr(self, initiate_root_function)
+#         self.edge_handler = getattr(self, edge_handler)
+#         self.vertex_handler = getattr(self, vertex_handler)
+#
+#     def dfs(self):
+#         root = self.tree.root
+#         root.external_object = self.initiate_root_function()
+#         for function in root.functions:
+#             self.edge_handler(root, function)
+#         root.alter_children(self.vertex_handler)
+#         return root
+#
+#     def initiate_cli_root(self):
+#         return click.Group(name=self.tree.root.name)
+#
+#     def initiate_api_root(self):
+#         import fastapi
+#         return fastapi.APIRouter(prefix="/{}".format(self.tree.root.name).replace("/"))
