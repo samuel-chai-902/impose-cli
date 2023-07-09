@@ -1,5 +1,5 @@
 from ._utils import parse_nodes, _get_interface_builder
-from inspect import currentframe, getframeinfo
+from inspect import stack
 
 
 def impose_cli(target: str = None, launch_type: str = "cli", launch_specific_configs: dict = {},
@@ -14,6 +14,6 @@ def impose_cli(target: str = None, launch_type: str = "cli", launch_specific_con
     :return:
     """
 
-    tree = parse_nodes(getframeinfo(currentframe().f_back)[0], target)
+    tree = parse_nodes(stack()[1].filename, target)
     return _get_interface_builder(tree, launch_type, root_name, launch_specific_configs, return_before_executing)
 
