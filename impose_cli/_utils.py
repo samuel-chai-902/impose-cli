@@ -155,7 +155,7 @@ def parse_nodes(entry: str, target: str):
         spec.loader.exec_module(module)
         return module, module_name
 
-    def produce_module_map(python_modules_files: list[str]):
+    def produce_module_map(python_modules_files: list):
         file_function_map = {}
         for file in python_modules_files:
             module, module_name = load_module_from_file(file)

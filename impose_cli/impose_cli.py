@@ -13,14 +13,7 @@ def impose_cli(target: str = None, launch_type: str = "cli", launch_specific_con
     :param build_cache: If cache should be built. This could be problematic for larger applications.
     :return:
     """
-    entry = None
-    try:
-        entry = stack()[1].filename
-    except:
-        try:
-            entry = getframeinfo(currentframe().f_back)[0]
-        except:
-            print("The entrypoint for your application could not be found.")
+    entry = stack()[1].filename
     tree = parse_nodes(entry, target)
     return _get_interface_builder(tree, launch_type, root_name, launch_specific_configs, return_before_executing)
 
